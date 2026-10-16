@@ -55,7 +55,10 @@ int main(int argc, char *argv[]){
         // Process the logical address here
         logical_address = logical_address & 0xFFFF; // Ensure the logical address is 16 bits
 
-        printf("Logical Address: %d\n", logical_address);
+        //calculate page number and offset
+        int page_number = logical_address/PAGE_SIZE;
+        int offset = logical_address % PAGE_SIZE;
+        printf("Logical Address: %d, Page Number: %d, Offset: %d\n", logical_address, page_number, offset);
     }
 
     fclose(addr_file);
