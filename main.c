@@ -6,6 +6,8 @@
 
 int pageTable[NUM_PAGES];
 
+signed char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physical memory
+
 int main(int argc, char *argv[]){
     //implement mem something like char mem[nframe][pagesize]
     if(argc < 2) {
@@ -58,7 +60,12 @@ int main(int argc, char *argv[]){
         //calculate page number and offset
         int page_number = logical_address/PAGE_SIZE;
         int offset = logical_address % PAGE_SIZE;
+
+        //calculate the starting byte of the page in the backing store
+        long backing_store_position = page_number * PAGE_SIZE;
+
         printf("Logical Address: %d, Page Number: %d, Offset: %d\n", logical_address, page_number, offset);
+        printf("Backing Store Position: %ld\n", backing_store_position);
     }
 
     fclose(addr_file);
