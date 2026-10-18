@@ -6,9 +6,11 @@
 
 int pageTable[NUM_PAGES];
 
+//each row of the 2D array represents a page in physical memory, and each column represents a byte within that page
 signed char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physical memory
 
 int main(int argc, char *argv[]){
+    int nextFrame = 0;
     //implement mem something like char mem[nframe][pagesize]
     if(argc < 2) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
@@ -64,8 +66,49 @@ int main(int argc, char *argv[]){
         //calculate the starting byte of the page in the backing store
         long backing_store_position = page_number * PAGE_SIZE;
 
+        //prints to check if it did it right
         printf("Logical Address: %d, Page Number: %d, Offset: %d\n", logical_address, page_number, offset);
         printf("Backing Store Position: %ld\n", backing_store_position);
+
+        if(fseek(backing_store, backing_store_position, SEEK_SET) != 0){
+            fprintf(stderr, "Error: Could not seek to position %ld in backing store\n", backing_store_position);
+            fclose(addr_file);
+            fclose(backing_store);
+            fclose(out1);
+            fclose(out2);
+            fclose(out3);
+            return 1;
+        }
+
+        if(pageTable[page_number] == -1){ // Page not in memory
+
+            if(nextFrame >= NUM_PAGES){
+                fprintf(stderr, "Error: Physical memory is full, cannot load more pages\n");
+                fclose(addr_file);
+                fclose(backing_store);
+                fclose(out1);
+                fclose(out2);
+                fclose(out3);
+                return 1;
+            }
+
+            size_t bytesRead = fread(physicalMemory[nextFrame], sizeof(signed char), PAGE_SIZE, backing_store);
+            if(bytesRead != PAGE_SIZE){
+                fprintf(stderr, "Error: Could not read full page from backing store\n");
+                fclose(addr_file);
+                fclose(backing_store);
+                fclose(out1);
+                fclose(out2);
+                fclose(out3);
+                return 1;
+            }
+
+            pageTable[page_number] = nextFrame; // Update the page table to indicate the page is now in memory
+            printf("Read %zu bytes from backing store into physical memory for page number %d\n", bytesRead, page_number);
+
+            nextFrame++; // Increment the next frame index
+
+        }
     }
 
     fclose(addr_file);
