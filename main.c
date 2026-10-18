@@ -55,6 +55,7 @@ int main(int argc, char *argv[]){
     }
 
     int logical_address;
+
     while(fscanf(addr_file, "%d", &logical_address) == 1){
         // Process the logical address here
         logical_address = logical_address & 0xFFFF; // Ensure the logical address is 16 bits
@@ -63,27 +64,27 @@ int main(int argc, char *argv[]){
         int page_number = logical_address/PAGE_SIZE;
         int offset = logical_address % PAGE_SIZE;
 
-        //calculate the starting byte of the page in the backing store
-        long backing_store_position = page_number * PAGE_SIZE;
-
         //prints to check if it did it right
         printf("Logical Address: %d, Page Number: %d, Offset: %d\n", logical_address, page_number, offset);
-        printf("Backing Store Position: %ld\n", backing_store_position);
 
-        if(fseek(backing_store, backing_store_position, SEEK_SET) != 0){
-            fprintf(stderr, "Error: Could not seek to position %ld in backing store\n", backing_store_position);
-            fclose(addr_file);
-            fclose(backing_store);
-            fclose(out1);
-            fclose(out2);
-            fclose(out3);
-            return 1;
-        }
-
-        if(pageTable[page_number] == -1){ // Page not in memory
+        if(pageTable[page_number] == -1){ // Page not in memory 
 
             if(nextFrame >= NUM_PAGES){
                 fprintf(stderr, "Error: Physical memory is full, cannot load more pages\n");
+                fclose(addr_file);
+                fclose(backing_store);
+                fclose(out1);
+                fclose(out2);
+                fclose(out3);
+                return 1;
+            }
+
+            //calculate the starting byte of the page in the backing store
+            long backing_store_position = page_number * PAGE_SIZE;
+            printf("Backing Store Position: %ld\n", backing_store_position);
+
+            if(fseek(backing_store, backing_store_position, SEEK_SET) != 0){
+                fprintf(stderr, "Error: Could not seek to position %ld in backing store\n", backing_store_position);
                 fclose(addr_file);
                 fclose(backing_store);
                 fclose(out1);
@@ -107,8 +108,13 @@ int main(int argc, char *argv[]){
             printf("Read %zu bytes from backing store into physical memory for page number %d\n", bytesRead, page_number);
 
             nextFrame++; // Increment the next frame index
-
         }
+        int frame_number = pageTable[page_number];
+        int physical_address = frame_number * PAGE_SIZE + offset;
+        signed char value = physicalMemory[frame_number][offset];
+        fprintf(out1, "%d\n", logical_address);
+        fprintf(out2, "%d\n", physical_address);
+        fprintf(out3, "%d\n", value);
     }
 
     fclose(addr_file);
