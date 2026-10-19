@@ -64,10 +64,7 @@ int main(int argc, char *argv[]){
         int page_number = logical_address/PAGE_SIZE;
         int offset = logical_address % PAGE_SIZE;
 
-        //prints to check if it did it right
-        printf("Logical Address: %d, Page Number: %d, Offset: %d\n", logical_address, page_number, offset);
-
-        if(pageTable[page_number] == -1){ // Page not in memory 
+        if(pageTable[page_number] == -1){ // Page fault, page is not in memory
 
             if(nextFrame >= NUM_PAGES){
                 fprintf(stderr, "Error: Physical memory is full, cannot load more pages\n");
@@ -81,7 +78,6 @@ int main(int argc, char *argv[]){
 
             //calculate the starting byte of the page in the backing store
             long backing_store_position = page_number * PAGE_SIZE;
-            printf("Backing Store Position: %ld\n", backing_store_position);
 
             if(fseek(backing_store, backing_store_position, SEEK_SET) != 0){
                 fprintf(stderr, "Error: Could not seek to position %ld in backing store\n", backing_store_position);
@@ -105,7 +101,6 @@ int main(int argc, char *argv[]){
             }
 
             pageTable[page_number] = nextFrame; // Update the page table to indicate the page is now in memory
-            printf("Read %zu bytes from backing store into physical memory for page number %d\n", bytesRead, page_number);
 
             nextFrame++; // Increment the next frame index
         }
