@@ -11,6 +11,7 @@ signed char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physi
 
 int main(int argc, char *argv[]){
     int nextFrame = 0;
+    int pageFaults = 0;
     //implement mem something like char mem[nframe][pagesize]
     if(argc < 2) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
@@ -65,7 +66,8 @@ int main(int argc, char *argv[]){
         int offset = logical_address % PAGE_SIZE;
 
         if(pageTable[page_number] == -1){ // Page fault, page is not in memory
-
+            pageFaults++; // Increment the page fault counter
+            
             if(nextFrame >= NUM_PAGES){
                 fprintf(stderr, "Error: Physical memory is full, cannot load more pages\n");
                 fclose(addr_file);
@@ -111,6 +113,8 @@ int main(int argc, char *argv[]){
         fprintf(out2, "%d\n", physical_address);
         fprintf(out3, "%d\n", value);
     }
+
+    printf("Page Faults: %d\n", pageFaults);
 
     fclose(addr_file);
     fclose(backing_store);
