@@ -2,12 +2,12 @@
 #include <stdlib.h>
 
 #define PAGE_SIZE 256
-#define NUM_PAGES 256 
+#define NUM_PAGES 256
 
 int pageTable[NUM_PAGES];
 
 //each row of the 2D array represents a page in physical memory, and each column represents a byte within that page
-signed char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physical memory
+char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physical memory
 
 int main(int argc, char *argv[]){
     int nextFrame = 0;
@@ -18,8 +18,8 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    FILE *addr_file = fopen(argv[1], "r"); 
-    if(!addr_file){ 
+    FILE *addr_file = fopen(argv[1], "r");
+    if(!addr_file){
         fprintf(stderr, "Error: Could not open file %s\n", argv[1]);
         return 1;
     }
@@ -31,10 +31,10 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    FILE *out1 = fopen("out1.txt", "w"); 
-    FILE *out2 = fopen("out2.txt", "w"); 
-    FILE *out3 = fopen("out3.txt", "w"); 
-    if(!out1 || !out2 || !out3){ 
+    FILE *out1 = fopen("out1.txt", "w");
+    FILE *out2 = fopen("out2.txt", "w");
+    FILE *out3 = fopen("out3.txt", "w");
+    if(!out1 || !out2 || !out3){
         fprintf(stderr, "Error: Could not open one or more output files\n");
         fclose(addr_file);
         fclose(backing_store);
@@ -65,8 +65,8 @@ int main(int argc, char *argv[]){
         int offset = logical_address % PAGE_SIZE;
 
         if(pageTable[page_number] == -1){ // Page fault, page is not in memory
-            pageFaults++; 
-            
+            pageFaults++;
+
             if(nextFrame >= NUM_PAGES){
                 fprintf(stderr, "Error: Physical memory is full, cannot load more pages\n");
                 fclose(addr_file);
