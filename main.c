@@ -12,13 +12,13 @@ signed char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physi
 int main(int argc, char *argv[]){
     int nextFrame = 0;
     int pageFaults = 0;
-    //implement mem something like char mem[nframe][pagesize]
+
     if(argc < 2) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
         return 1;
     }
 
-    FILE *addr_file = fopen(argv[1], "r"); // Open the file for reading
+    FILE *addr_file = fopen(argv[1], "r"); 
     if(!addr_file){ 
         fprintf(stderr, "Error: Could not open file %s\n", argv[1]);
         return 1;
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]){
     FILE *out1 = fopen("out1.txt", "w"); 
     FILE *out2 = fopen("out2.txt", "w"); 
     FILE *out3 = fopen("out3.txt", "w"); 
-    if(!out1 || !out2 || !out3){ // Check if any of the output files could not be opened/created
+    if(!out1 || !out2 || !out3){ 
         fprintf(stderr, "Error: Could not open one or more output files\n");
         fclose(addr_file);
         fclose(backing_store);
@@ -58,15 +58,14 @@ int main(int argc, char *argv[]){
     int logical_address;
 
     while(fscanf(addr_file, "%d", &logical_address) == 1){
-        // Process the logical address here
+
         logical_address = logical_address & 0xFFFF; // Ensure the logical address is 16 bits
 
-        //calculate page number and offset
         int page_number = logical_address/PAGE_SIZE;
         int offset = logical_address % PAGE_SIZE;
 
         if(pageTable[page_number] == -1){ // Page fault, page is not in memory
-            pageFaults++; // Increment the page fault counter
+            pageFaults++; 
             
             if(nextFrame >= NUM_PAGES){
                 fprintf(stderr, "Error: Physical memory is full, cannot load more pages\n");
