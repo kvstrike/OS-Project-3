@@ -16,7 +16,7 @@ TLBEntry tlb[TLB_SIZE];
 //each row of the 2D array represents a page in physical memory, and each column represents a byte within that page
 char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physical memory
 
-int main(int argc, char *argv[]){
+int main(int argc, char **argv){
     int nextFrame = 0;
     int pageFaults = 0;
     int tlbHits = 0;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]){
             tlb[tlbIndex].pageNumber = page_number;
             tlb[tlbIndex].frameNumber = frame_number;
             // Increment the TLB index in a circular manner when index is same as size as TLB_SIZE, it will reset to 0
-            tlbIndex = (tlbIndex + 1) % TLB_SIZE; 
+            tlbIndex = (tlbIndex + 1) % TLB_SIZE;
         }
         int physical_address = frame_number * PAGE_SIZE + offset;
         signed char value = physicalMemory[frame_number][offset];
