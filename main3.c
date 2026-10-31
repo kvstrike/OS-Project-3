@@ -12,6 +12,8 @@ typedef struct {
 
 int pageTable[NUM_PAGES];
 TLBEntry tlb[TLB_SIZE];
+int frameTable[NUM_PAGES];
+int lastUsed[NUM_PAGES];
 
 //each row of the 2D array represents a page in physical memory, and each column represents a byte within that page
 char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physical memory
@@ -21,6 +23,7 @@ int main(int argc, char **argv){
     int pageFaults = 0;
     int tlbHits = 0;
     int tlbIndex = 0;
+    int time = 0;
 
     if(argc < 2) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
@@ -61,11 +64,13 @@ int main(int argc, char **argv){
 
     //initialize page table
     for(int i = 0; i < NUM_PAGES; i++){
-        pageTable[i] = -1; // -1 indicates that the page is not in memory
+        pageTable[i] = -1;
+        frameTable[i] = -1;
+        lastUsed[i] = 0;
     }
 
     for(int i = 0; i < TLB_SIZE; i++){
-        tlb[i].pageNumber = -1; // -1 indicates that the TLB entry is empty
+        tlb[i].pageNumber = -1;
         tlb[i].frameNumber = -1;
     }
 
@@ -74,6 +79,7 @@ int main(int argc, char **argv){
     while(fscanf(addr_file, "%d", &logical_address) == 1){
 
         logical_address = logical_address & 0xFFFF; // Ensure the logical address is 16 bits
+		time++;
 
         int page_number = logical_address/PAGE_SIZE;
         int offset = logical_address % PAGE_SIZE;
@@ -94,13 +100,30 @@ int main(int argc, char **argv){
                 pageFaults++;
 
                 if(nextFrame >= NUM_PAGES){
-                    fprintf(stderr, "Error: Physical memory is full, cannot load more pages\n");
-                    fclose(addr_file);
-                    fclose(backing_store);
-                    fclose(out1);
-                    fclose(out2);
-                    fclose(out3);
-                    return 1;
+                    int oldestPage = frameTable[0];
+
+                    for(int i = 1; i < NUM_PAGES; i++){
+                        int currentPage = frameTable[i];
+
+                        if(lastUsed[currentPage] < lastUsed[oldestPage]){
+                            oldestPage = currentPage;
+                        }
+                    }
+
+                    frame_number = pageTable[oldestPage];
+
+                    pageTable[oldestPage] = -1;
+
+                    for(int i = 0; i < TLB_SIZE; i++){
+                        if(tlb[i].pageNumber == oldestPage){
+                            tlb[i].pageNumber = -1;
+                            tlb[i].frameNumber = -1;
+                        }
+                    }
+                }
+                else{
+                    frame_number = nextFrame;
+                    nextFrame++;
                 }
 
                 //calculate the starting byte of the page in the backing store
@@ -116,7 +139,7 @@ int main(int argc, char **argv){
                     return 1;
                 }
 
-                size_t bytesRead = fread(physicalMemory[nextFrame], sizeof(signed char), PAGE_SIZE, backing_store);
+                size_t bytesRead = fread(physicalMemory[frame_number], sizeof(signed char), PAGE_SIZE, backing_store);
                 if(bytesRead != PAGE_SIZE){
                     fprintf(stderr, "Error: Could not read full page from backing store\n");
                     fclose(addr_file);
@@ -127,17 +150,19 @@ int main(int argc, char **argv){
                     return 1;
                 }
 
-                pageTable[page_number] = nextFrame; // Update the page table to indicate the page is now in memory
-
-                nextFrame++; // Increment the next frame index
+                pageTable[page_number] = frame_number;
+                frameTable[frame_number] = page_number;
             }
 
             frame_number = pageTable[page_number];
             tlb[tlbIndex].pageNumber = page_number;
             tlb[tlbIndex].frameNumber = frame_number;
-            // Increment the TLB index in a circular manner when index is same as size as TLB_SIZE, it will reset to 0
             tlbIndex = (tlbIndex + 1) % TLB_SIZE;
         }
+
+        // Update the last time this page was accessed
+        lastUsed[page_number] = time;
+
         int physical_address = frame_number * PAGE_SIZE + offset;
         signed char value = physicalMemory[frame_number][offset];
         fprintf(out1, "%d\n", logical_address);

@@ -3,6 +3,7 @@
 
 #define PAGE_SIZE 256
 #define NUM_PAGES 256
+#define NUM_FRAMES 128
 #define TLB_SIZE 16
 
 typedef struct {
@@ -13,14 +14,15 @@ typedef struct {
 int pageTable[NUM_PAGES];
 TLBEntry tlb[TLB_SIZE];
 
-//each row of the 2D array represents a page in physical memory, and each column represents a byte within that page
-char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physical memory
+int frameToPage[NUM_FRAMES];
+char physicalMemory[NUM_FRAMES][PAGE_SIZE];
 
 int main(int argc, char **argv) {
     int nextFrame = 0;
     int pageFaults = 0;
     int tlbHits = 0;
     int tlbIndex = 0;
+    int nextVictemFrame = 0;
 
     if(argc < 2) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
@@ -69,6 +71,10 @@ int main(int argc, char **argv) {
         tlb[i].frameNumber = -1;
     }
 
+    for(int i = 0; i < NUM_FRAMES; i++){
+        frameToPage[i] = -1;
+    }
+
     int logical_address;
 
     while(fscanf(addr_file, "%d", &logical_address) == 1){
@@ -93,17 +99,27 @@ int main(int argc, char **argv) {
             if(pageTable[page_number] == -1){ // Page fault, page is not in memory
                 pageFaults++;
 
-                if(nextFrame >= NUM_PAGES){
-                    fprintf(stderr, "Error: Physical memory is full, cannot load more pages\n");
-                    fclose(addr_file);
-                    fclose(backing_store);
-                    fclose(out1);
-                    fclose(out2);
-                    fclose(out3);
-                    return 1;
+                // Select a free frame or replace the oldest frame
+                if(nextFrame < NUM_FRAMES){
+                    frame_number = nextFrame++;
+                }
+                else{
+                    frame_number = nextVictemFrame;
+
+                    int victimPage = frameToPage[frame_number];
+                    pageTable[victimPage] = -1;
+
+                    // Remove replaced page from TLB
+                    for(int i = 0; i < TLB_SIZE; i++){
+                        if(tlb[i].pageNumber == victimPage){
+                            tlb[i].pageNumber = -1;
+                            tlb[i].frameNumber = -1;
+                        }
+                    }
+
+                    nextVictemFrame = (nextVictemFrame + 1) % NUM_FRAMES;
                 }
 
-                //calculate the starting byte of the page in the backing store
                 long backing_store_position = page_number * PAGE_SIZE;
 
                 if(fseek(backing_store, backing_store_position, SEEK_SET) != 0){
@@ -116,7 +132,7 @@ int main(int argc, char **argv) {
                     return 1;
                 }
 
-                size_t bytesRead = fread(physicalMemory[nextFrame], sizeof(signed char), PAGE_SIZE, backing_store);
+                size_t bytesRead = fread(physicalMemory[frame_number], sizeof(signed char), PAGE_SIZE, backing_store);
                 if(bytesRead != PAGE_SIZE){
                     fprintf(stderr, "Error: Could not read full page from backing store\n");
                     fclose(addr_file);
@@ -127,9 +143,8 @@ int main(int argc, char **argv) {
                     return 1;
                 }
 
-                pageTable[page_number] = nextFrame; // Update the page table to indicate the page is now in memory
-
-                nextFrame++; // Increment the next frame index
+                pageTable[page_number] = frame_number;
+                frameToPage[frame_number] = page_number;
             }
 
             frame_number = pageTable[page_number];
