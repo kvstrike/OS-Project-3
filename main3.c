@@ -3,6 +3,7 @@
 
 #define PAGE_SIZE 256
 #define NUM_PAGES 256
+#define NUM_FRAMES 256
 #define TLB_SIZE 16
 
 typedef struct {
@@ -12,11 +13,11 @@ typedef struct {
 
 int pageTable[NUM_PAGES];
 TLBEntry tlb[TLB_SIZE];
-int frameTable[NUM_PAGES];
+int frameTable[NUM_FRAMES];
 int lastUsed[NUM_PAGES];
 
 //each row of the 2D array represents a page in physical memory, and each column represents a byte within that page
-char physicalMemory[NUM_PAGES][PAGE_SIZE]; // 2D array to represent physical memory
+char physicalMemory[NUM_FRAMES][PAGE_SIZE]; // 2D array to represent physical memory
 
 int main(int argc, char **argv){
     int nextFrame = 0;
@@ -65,8 +66,11 @@ int main(int argc, char **argv){
     //initialize page table
     for(int i = 0; i < NUM_PAGES; i++){
         pageTable[i] = -1;
-        frameTable[i] = -1;
         lastUsed[i] = 0;
+    }
+
+    for(int i = 0; i < NUM_FRAMES; i++){
+        frameTable[i] = -1;
     }
 
     for(int i = 0; i < TLB_SIZE; i++){
@@ -99,10 +103,10 @@ int main(int argc, char **argv){
             if(pageTable[page_number] == -1){ // Page fault, page is not in memory
                 pageFaults++;
 
-                if(nextFrame >= NUM_PAGES){
+                if(nextFrame >= NUM_FRAMES){
                     int oldestPage = frameTable[0];
 
-                    for(int i = 1; i < NUM_PAGES; i++){
+                    for(int i = 1; i < NUM_FRAMES; i++){
                         int currentPage = frameTable[i];
 
                         if(lastUsed[currentPage] < lastUsed[oldestPage]){

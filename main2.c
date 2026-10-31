@@ -3,7 +3,7 @@
 
 #define PAGE_SIZE 256
 #define NUM_PAGES 256
-#define NUM_FRAMES 128
+#define NUM_FRAMES 256
 #define TLB_SIZE 16
 
 typedef struct {
