@@ -4,4 +4,4 @@ all:
 	gcc main3.c -o main3
 
 clean:
-	rm main1 main2 main3
+	rm main1 main2 main3 out*
